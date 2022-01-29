@@ -27,6 +27,7 @@ public class ServerTeleport {
   private final ProxyServer server;
   private final Logger logger;
 
+
   @Inject
   public ServerTeleport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
     this.server = server;
