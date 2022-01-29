@@ -25,4 +25,4 @@ Commands require 'servertp' permission
 ## Disclaimer
 
 I do not own this plugin, feel free to fork the original https://github.com/TeamKun/ServerTeleport to extend it
-This fork is to fix the issue that renders the plugin unusable while the author is non responsive
+This fork is to fix the issue that renders the plugin unusable
