@@ -15,77 +15,81 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@Plugin(id = "serverteleport",
-        name = "ServerTeleport",
-        version = "${project.version}",
-        description = "Move players between server",
-        authors = {"Kamesuta", "Calvin GH"}
+@Plugin(
+  id = "serverteleport",
+  name = "ServerTeleport",
+  version = "${project.version}",
+  description = "Move players between server",
+  authors = {"Kamesuta", "Calvin GH"}
 )
 public class ServerTeleport {
-    private final Path dataDirectory;
-    private final ProxyServer server;
-    private final Logger logger;
+  private final Path dataDirectory;
+  private final ProxyServer server;
+  private final Logger logger;
 
-    private Toml loadConfig() {
-        File folder = this.dataDirectory.toFile();
-        File file = new File(folder, "config.toml");
-        if (!file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
-        }
 
-        if (!file.exists()) {
-            try {
-                InputStream input = this.getClass().getResourceAsStream("/" + file.getName());
-                Throwable t = null;
+  @Inject
+  public ServerTeleport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
+    this.server = server;
+    this.logger = logger;
+    this.dataDirectory = dataDirectory;
 
-                try {
-                    if (input != null) {
-                        Files.copy(input, file.toPath());
-                    } else {
-                        file.createNewFile();
-                    }
-                } catch (Throwable e) {
-                    t = e;
-                    throw e;
-                } finally {
-                    if (input != null) {
-                        if (t != null) {
-                            try {
-                                input.close();
-                            } catch (Throwable ex) {
-                                t.addSuppressed(ex);
-                            }
-                        } else {
-                            input.close();
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
+    Toml toml = this.loadConfig();
+    if (toml == null) {
+      this.logger.warn("Failed to load config.toml. Shutting down.");
+      return;
+    }
+
+    CommandManager commandManager = this.server.getCommandManager();
+    CommandMeta meta = commandManager
+      .metaBuilder("stp")
+      .aliases("servertp")
+      .build();
+    commandManager.register(meta, new ServerTeleportCommand(this.server, toml));
+    this.logger.info("Plugin has enabled!");
+  }
+
+  private Toml loadConfig() {
+    File folder = this.dataDirectory.toFile();
+    File file = new File(folder, "config.toml");
+    if (!file.getParentFile().exists()) {
+      file.getParentFile().mkdirs();
+    }
+
+    if (!file.exists()) {
+      try {
+        InputStream input = this.getClass().getResourceAsStream("/" + file.getName());
+        Throwable t = null;
+
+        try {
+          if (input != null) {
+            Files.copy(input, file.toPath());
+          } else {
+            file.createNewFile();
+          }
+        } catch (Throwable e) {
+          t = e;
+          throw e;
+        } finally {
+          if (input != null) {
+            if (t != null) {
+              try {
+                input.close();
+              } catch (Throwable ex) {
+                t.addSuppressed(ex);
+              }
+            } else {
+              input.close();
             }
+          }
         }
-
-        return (new Toml()).read(file);
+      } catch (IOException e) {
+        e.printStackTrace();
+        return null;
+      }
     }
 
-    @Inject
-    public ServerTeleport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
-        this.server = server;
-        this.logger = logger;
-        this.dataDirectory = dataDirectory;
+    return (new Toml()).read(file);
+  }
 
-        Toml toml = this.loadConfig();
-        if (toml == null) {
-            this.logger.warn("Failed to load config.toml. Shutting down.");
-        } else {
-            CommandManager commandManager = this.server.getCommandManager();
-            CommandMeta meta = commandManager
-              .metaBuilder("stp")
-              .aliases("servertp")
-              .build();
-            commandManager.register(meta, new ServerTeleportCommand(this.server, toml));
-            this.logger.info("Plugin has enabled!");
-        }
-    }
 }
