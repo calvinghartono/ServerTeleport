@@ -3,6 +3,7 @@ package net.teamfruit.serverteleport;
 import com.google.inject.Inject;
 import com.moandjiezana.toml.Toml;
 import com.velocitypowered.api.command.CommandManager;
+import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
@@ -18,14 +19,15 @@ import java.nio.file.Path;
         name = "ServerTeleport",
         version = "${project.version}",
         description = "Move players between server",
-        authors = {"Kamesuta"}
+        authors = {"Kamesuta", "Calvin GH"}
 )
 public class ServerTeleport {
+    private final Path dataDirectory;
     private final ProxyServer server;
     private final Logger logger;
 
-    private Toml loadConfig(Path path) {
-        File folder = path.toFile();
+    private Toml loadConfig() {
+        File folder = this.dataDirectory.toFile();
         File file = new File(folder, "config.toml");
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
@@ -68,16 +70,22 @@ public class ServerTeleport {
     }
 
     @Inject
-    public ServerTeleport(ProxyServer server, CommandManager commandManager, Logger logger, @DataDirectory Path folder) {
+    public ServerTeleport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;
+        this.dataDirectory = dataDirectory;
 
-        Toml toml = this.loadConfig(folder);
+        Toml toml = this.loadConfig();
         if (toml == null) {
-            logger.warn("Failed to load config.toml. Shutting down.");
+            this.logger.warn("Failed to load config.toml. Shutting down.");
         } else {
-            commandManager.register(new ServerTeleportCommand(server, toml), "stp", "servertp");
-            logger.info("Plugin has enabled!");
+            CommandManager commandManager = this.server.getCommandManager();
+            CommandMeta meta = commandManager
+              .metaBuilder("stp")
+              .aliases("servertp")
+              .build();
+            commandManager.register(meta, new ServerTeleportCommand(this.server, toml));
+            this.logger.info("Plugin has enabled!");
         }
     }
 }
